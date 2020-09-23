@@ -37,13 +37,35 @@
           loginWithRedirect,
           loginWithPopup,
           logout,
+          user,
         } = useAuth0();
         const [token, setToken] = useState(null);
         const [claims, setClaims] = useState(null);
+        const [userMetaData, setUserMetaData] = useState(null);
 
         if (isLoading) {
           return <div>loading...</div>;
         }
+
+        const updateMetaData = async () => {
+          const token = await getAccessTokenSilently();
+          const response = await fetch(
+            `https://brucke.auth0.com/api/v2/users/${encodeURIComponent(
+              user.sub
+            )}`,
+            {
+              headers: {
+                'content-type': 'application/json',
+                authorization: `Bearer ${token}`,
+              },
+              method: 'PATCH',
+              body: JSON.stringify({
+                user_metadata: { random: Math.random() },
+              }),
+            }
+          );
+          setUserMetaData(await response.json());
+        };
 
         return isAuthenticated ? (
           <div>
@@ -65,7 +87,9 @@
             <button onClick={async () => setClaims(await getIdTokenClaims())}>
               Get id_token claims
             </button>
+            <button onClick={updateMetaData}>Update user metadata</button>
             {token && <pre>access_token: {token}</pre>}
+            {userMetaData && <pre>{JSON.stringify(userMetaData, null, 2)}</pre>}
             {claims && (
               <pre>id_token_claims: {JSON.stringify(claims, null, 2)}</pre>
             )}
@@ -84,6 +108,8 @@
         <Auth0Provider
           domain="brucke.auth0.com"
           clientId="wLSIP47wM39wKdDmOj6Zb5eSEw3JVhVp"
+          audience="https://brucke.auth0.com/api/v2/"
+          scope="update:current_user_metadata"
           redirectUri={window.location.origin}
         >
           <App />
