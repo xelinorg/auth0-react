@@ -24,6 +24,28 @@ describe('withAuthenticationRequired', () => {
     expect(screen.queryByText('Private')).not.toBeInTheDocument();
   });
 
+  it('should block access to a private component when not authenticated using popup', async () => {
+    mockClient.getUser.mockResolvedValue({ name: 'Test' });
+    mockClient.getUser.mockResolvedValueOnce(undefined);
+    let resolve;
+    const promise = new Promise((r) => (resolve = r));
+    mockClient.loginWithPopup.mockReturnValue(promise as any);
+    const MyComponent = (): JSX.Element => <>Private</>;
+    const WrappedComponent = withAuthenticationRequired(MyComponent, {
+      popup: true,
+    });
+    render(
+      <Auth0Provider clientId="__test_client_id__" domain="__test_domain__">
+        <WrappedComponent />
+      </Auth0Provider>
+    );
+
+    expect(screen.queryByText('Private')).not.toBeInTheDocument();
+    (resolve as any)();
+    await waitFor(() => expect(mockClient.loginWithPopup).toHaveBeenCalled());
+    expect(screen.queryByText('Private')).toBeInTheDocument();
+  });
+
   it('should allow access to a private component when authenticated', async () => {
     mockClient.getUser.mockResolvedValue({ name: '__test_user__' });
     const MyComponent = (): JSX.Element => <>Private</>;
@@ -78,6 +100,36 @@ describe('withAuthenticationRequired', () => {
         expect.objectContaining({
           fragment: 'foo',
         })
+      )
+    );
+  });
+
+  it('should pass additional options on to loginWithPopup', async () => {
+    mockClient.getUser.mockResolvedValue({ name: 'Test' });
+    mockClient.getUser.mockResolvedValueOnce(undefined);
+    const MyComponent = (): JSX.Element => <>Private</>;
+    const WrappedComponent = withAuthenticationRequired(MyComponent, {
+      popup: true,
+      loginOptions: {
+        scope: '__test_scope__',
+      },
+      popupOptions: {
+        timeoutInSeconds: 50,
+      },
+    });
+    render(
+      <Auth0Provider clientId="__test_client_id__" domain="__test_domain__">
+        <WrappedComponent />
+      </Auth0Provider>
+    );
+    await waitFor(() =>
+      expect(mockClient.loginWithPopup).toHaveBeenCalledWith(
+        {
+          scope: '__test_scope__',
+        },
+        {
+          timeoutInSeconds: 50,
+        }
       )
     );
   });

@@ -1,5 +1,9 @@
 import React, { ComponentType, useEffect, FC } from 'react';
-import { RedirectLoginOptions } from '@auth0/auth0-spa-js';
+import {
+  PopupConfigOptions,
+  PopupLoginOptions,
+  RedirectLoginOptions,
+} from '@auth0/auth0-spa-js';
 import useAuth0 from './use-auth0';
 
 /**
@@ -63,14 +67,16 @@ export interface WithAuthenticationRequiredOptions {
 }
 
 /**
- * ```js
- * const MyProtectedComponent = withAuthenticationRequired(MyComponent);
- * ```
- *
- * When you wrap your components in this Higher Order Component and an anonymous user visits your component
- * they will be redirected to the login page and returned to the page they we're redirected from after login.
+ * Options for the withAuthenticationRequired Higher Order Component
  */
-const withAuthenticationRequired = <P extends object>(
+export interface WithAuthenticationRequiredPopupOptions {
+  popup: true;
+
+  loginOptions?: PopupLoginOptions;
+  popupOptions?: PopupConfigOptions;
+}
+
+const withAuthenticationRedirectRequired = <P extends object>(
   Component: ComponentType<P>,
   options: WithAuthenticationRequiredOptions = {}
 ): FC<P> => {
@@ -100,6 +106,69 @@ const withAuthenticationRequired = <P extends object>(
 
     return isAuthenticated ? <Component {...props} /> : onRedirecting();
   };
+};
+
+const withAuthenticationPopupRequired = <P extends object>(
+  Component: ComponentType<P>,
+  options: WithAuthenticationRequiredPopupOptions = { popup: true }
+): FC<P> => {
+  return function WithAuthenticationRequired(props: P): JSX.Element {
+    const { isAuthenticated, isLoading, loginWithPopup } = useAuth0();
+
+    const { loginOptions = {} } = options;
+
+    useEffect(() => {
+      if (isLoading || isAuthenticated) {
+        return;
+      }
+      (async (): Promise<void> => {
+        await loginWithPopup(loginOptions, options.popupOptions);
+      })();
+    }, [isLoading, isAuthenticated, loginWithPopup, loginOptions]);
+
+    return isAuthenticated ? <Component {...props} /> : <></>;
+  };
+};
+
+/**
+ * ```js
+ * const MyProtectedComponent = withAuthenticationRequired(MyComponent);
+ * ```
+ *
+ * When you wrap your components in this Higher Order Component and an anonymous user visits your component
+ * they will be redirected to the login page and returned to the page they we're redirected from after login.
+ */
+
+function withAuthenticationRequired<P extends object>(
+  Component: ComponentType<P>
+): FC<P>;
+function withAuthenticationRequired<P extends object>(
+  Component: ComponentType<P>,
+  options: WithAuthenticationRequiredOptions
+): FC<P>;
+function withAuthenticationRequired<P extends object>(
+  Component: ComponentType<P>,
+  options: WithAuthenticationRequiredPopupOptions
+): FC<P>;
+function withAuthenticationRequired<P extends object>(
+  Component: ComponentType<P>,
+  options:
+    | WithAuthenticationRequiredOptions
+    | WithAuthenticationRequiredPopupOptions = {}
+): FC<P> {
+  const showPopup = (
+    options:
+      | WithAuthenticationRequiredOptions
+      | WithAuthenticationRequiredPopupOptions
+  ): options is WithAuthenticationRequiredPopupOptions => {
+    return (options as WithAuthenticationRequiredPopupOptions)['popup'];
+  };
+
+  if (showPopup(options)) {
+    return withAuthenticationPopupRequired(Component, options);
+  } else {
+    return withAuthenticationRedirectRequired(Component, options);
+  }
 }
 
 export default withAuthenticationRequired;
