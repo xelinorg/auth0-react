@@ -17,8 +17,9 @@ ReactDOM.render(
       clientId={process.env.REACT_APP_CLIENT_ID}
       redirectUri={window.location.origin}
       audience={process.env.REACT_APP_AUDIENCE}
-      scope="read:users"
+      scope="users:read"
       onRedirectCallback={onRedirectCallback}
+      useRefreshTokens={true}
     >
       <App />
     </Auth0Provider>

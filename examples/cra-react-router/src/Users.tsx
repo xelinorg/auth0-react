@@ -7,10 +7,10 @@ const PORT = process.env.REACT_APP_API_PORT || 3001;
 
 export function Users() {
   const { loading, error, data: users = [] } = useApi(
-    `http://localhost:${PORT}/users`,
+    `https://api.localnet/users`,
     {
       audience: process.env.REACT_APP_AUDIENCE,
-      scope: 'read:users',
+      scope: 'users:read',
     }
   );
 
