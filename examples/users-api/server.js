@@ -24,10 +24,12 @@ if (!DOMAIN || !AUDIENCE) {
 app.use(cors()); // Allow all cors (not recommended for production)
 
 const kid = 'eEExOh_-YXgNASAOHz1y8Y1yYCHnO1xCxq7ItxjlG6E';
+
+const client = jwksClient({
   strictSsl: false, // Default value
   jwksUri: 'https://oap.localnet/jwks',
   requestHeaders: {}, // Optional
-  requestAgentOptions: {}, // Optional
+  requestAgentOptions: {} // Optional
 });
 
 client.getSigningKey(kid, (err, key) => {
