@@ -20,6 +20,7 @@ ReactDOM.render(
       scope="users:read"
       onRedirectCallback={onRedirectCallback}
       useRefreshTokens={true}
+      useFormData={true}
     >
       <App />
     </Auth0Provider>
